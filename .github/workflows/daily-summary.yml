@@ -26,6 +26,33 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Configure AI settings
+        env:
+          AI_BASE_URL: ${{ secrets.AI_BASE_URL }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          base_url = os.environ.get("AI_BASE_URL")
+          model = os.environ.get("AI_MODEL")
+          if not base_url and not model:
+              raise SystemExit(0)
+
+          config_path = Path("data/config.json")
+          config = json.loads(config_path.read_text(encoding="utf-8"))
+          if base_url:
+              config["ai"]["base_url"] = base_url
+          if model:
+              config["ai"]["model"] = model
+          config_path.write_text(
+              json.dumps(config, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
       - name: Run Horizon
         env:
           # Map secrets to environment variables expected by config.json
